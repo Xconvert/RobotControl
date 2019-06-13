@@ -198,7 +198,6 @@ public class RockerView extends View {
         if (lenXY < regionRadius){
             speed = MAX_SPEED * lenXY / regionRadius;
         }
-        //Log.d(TAG, "getRockerPositionPoint: speed " + speed);
 
         // 计算弧度
         double radian = Math.acos(lenX / lenXY);
@@ -224,12 +223,12 @@ public class RockerView extends View {
         }
         //radian > 3.14 / 2 car 顺时针转动，小于 3.14 / 2 则逆时针转动
         double angularVelocity = MAX_ANGULAR_VELOCITY * (radian / Math.PI * 2 - 1);
-        //Log.d(TAG, "getRockerPositionPoint: radian " + radian);
+
         // 回调返回参数
         if (mOnAngleChangeListener != null){
             mOnAngleChangeListener.angle(speed, angularVelocity);
         }
-
+        //计算摇杆显示位置
         if (lenXY  <= regionRadius) { // 触摸位置在可活动范围内
             return touchPoint;
         } else { // 触摸位置在可活动范围以外

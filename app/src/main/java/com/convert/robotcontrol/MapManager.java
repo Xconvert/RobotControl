@@ -19,6 +19,7 @@ import com.convert.robotcontrol.util.ImageProvider;
 import com.convert.robotcontrol.util.MapPrc;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +40,7 @@ public class MapManager {
     private Context mContext;
     private static Point sRobotPos; //机器人所在
     private static Point sDestPos; //目的地
+    private ArrayList<MarkPoint> mMarkPoints;
     private double mOrientationAngle = 0;//0.0-1.0
     private Bitmap mSrcMap; //初始地图
     private Bitmap mDesMap; //要显示的地图
@@ -68,6 +70,7 @@ public class MapManager {
     private void init() {
         sRobotPos = new Point();
         sDestPos = new Point();
+        mMarkPoints = new ArrayList<>();
         initMap();
     }
 
@@ -197,6 +200,16 @@ public class MapManager {
                 }
                 //此处 mDesMap 与手机宽高一样
                 mDesMap = Bitmap.createBitmap(mSrcMap, x, y, width, height, m, false);
+                if (!mMarkPoints.isEmpty()) {
+                    Canvas canvas = new Canvas(mDesMap);
+                    Paint paint = new Paint();
+                    paint.setColor(Color.BLACK);
+                    paint.setTextSize(32);
+                    for(MarkPoint pos : mMarkPoints) {
+                        canvas.drawCircle((int) ((pos.mPos.x - x) * scale), (int) ((pos.mPos.y - y) * scale), RADIUS, paint);
+                        canvas.drawText(pos.mName, (pos.mPos.x - x) * scale + RADIUS, (pos.mPos.y - y) * scale + RADIUS / 2, paint);
+                    }
+                }
                 if (sDestPos.x != 0 || sDestPos.y != 0) {
                     //如果目的地存在，画目的地
                     Canvas canvas = new Canvas(mDesMap);
@@ -383,5 +396,29 @@ public class MapManager {
         return mMapPrc.getRow();
     }
 
+    public void addMarkPoint(String name){
+        if (sDestPos.x != 0 || sDestPos.y != 0){
+            //查重
+            for (MarkPoint point : mMarkPoints) {
+                if (point.mName.equals(name)) {
+                    return;
+                }
+            }
+            Point p = new Point(sDestPos);
+            MarkPoint point = new MarkPoint(p, name);
+            mMarkPoints.add(point);
+            updateMap(x, y, width, height);
+        }
+    }
+
+    public void rmMarkPoint(String name) {
+        for (MarkPoint point : mMarkPoints) {
+            if (point.mName.equals(name)) {
+                mMarkPoints.remove(point);
+                updateMap(x, y, width, height);
+                return;
+            }
+        }
+    }
 
 }

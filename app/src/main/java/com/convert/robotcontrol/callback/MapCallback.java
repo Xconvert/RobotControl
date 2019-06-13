@@ -5,4 +5,5 @@ import android.graphics.Bitmap;
 public interface MapCallback {
     void updateMap(Bitmap bitmap);
     void updateThumb(Bitmap bitmap);
+    void reachDes(boolean isReach);
 }

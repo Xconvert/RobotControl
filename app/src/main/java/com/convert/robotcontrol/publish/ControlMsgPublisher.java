@@ -4,6 +4,13 @@
 //
 //import com.convert.robotcontrol.node.RoverOSNode;
 //
+//import org.ros.namespace.GraphName;
+//import org.ros.node.topic.Publisher;
+//
+//import geometry_msgs.Twist;
+//
+//import static com.convert.robotcontrol.RobotManager.sIsCtrl;
+//
 ///**
 // * This class implements publisher that publish control message to Turtlebot control topic
 // * at a constant rate.
@@ -35,27 +42,30 @@
 //     *
 //     * @param intervalMillis interval between two adjacent publishes
 //     */
-//    private ControlMsgPublisher(@NonNull RoverOSNode node, final long intervalMillis) {
+//    public ControlMsgPublisher(@NonNull RoverOSNode node, final long intervalMillis) {
 //        final Publisher<Twist> publisher = node.publishOnTopic(GraphName.of("/cmd_vel_mux/input/teleop"), geometry_msgs.Twist.class);
-//        new Thread(() -> {
-//            while (!Thread.currentThread().isInterrupted()) {
-//                if (ControlServer.this.getConnections().size() > 0) {
-//                    double linearValue, angularValue;
-//                    synchronized (this) {
-//                        linearValue = linear * linearScale;
-//                        angularValue = angular * angularScale;
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (!Thread.currentThread().isInterrupted()) {
+//                    if (sIsCtrl) {
+//                        double linearValue, angularValue;
+//                        synchronized (this) {
+//                            linearValue = linear * linearScale;
+//                            angularValue = angular * angularScale;
+//                        }
+//
+//                        geometry_msgs.Twist msg = publisher.newMessage();
+//                        msg.getLinear().setX(linearValue);
+//                        msg.getAngular().setZ(angularValue);
+//                        publisher.publish(msg);
 //                    }
 //
-//                    geometry_msgs.Twist msg = publisher.newMessage();
-//                    msg.getLinear().setX(linearValue);
-//                    msg.getAngular().setZ(angularValue);
-//                    publisher.publish(msg);
-//                }
-//
-//                try {
-//                    Thread.sleep(intervalMillis);
-//                } catch (InterruptedException e) {
-//                    Thread.currentThread().interrupt();
+//                    try {
+//                        Thread.sleep(intervalMillis);
+//                    } catch (InterruptedException e) {
+//                        Thread.currentThread().interrupt();
+//                    }
 //                }
 //            }
 //        }).start();
@@ -66,7 +76,7 @@
 //     *
 //     * @param value linear speed value
 //     */
-//    private synchronized void setLinear(double value) {
+//    public synchronized void setLinear(double value) {
 //        linear = value;
 //    }
 //
@@ -75,7 +85,7 @@
 //     *
 //     * @param value angular speed value
 //     */
-//    private synchronized void setAngular(double value) {
+//    public synchronized void setAngular(double value) {
 //        angular = value;
 //    }
 //
@@ -84,7 +94,7 @@
 //     *
 //     * @param value linear speed scale factor value
 //     */
-//    private synchronized void setLinearScale(double value) {
+//    public synchronized void setLinearScale(double value) {
 //        linearScale = value;
 //    }
 //
@@ -93,7 +103,7 @@
 //     *
 //     * @param value angular speed scale factor value
 //     */
-//    private synchronized void setAngularScale(double value) {
+//    public synchronized void setAngularScale(double value) {
 //        angularScale = value;
 //    }
 //}

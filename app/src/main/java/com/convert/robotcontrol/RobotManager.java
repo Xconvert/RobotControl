@@ -205,8 +205,23 @@ public class RobotManager implements WebSocketCallback {
             Log.i(TAG, "report: data is " + data);
             Gson gson = new Gson();
             PoseMsgModel msg = gson.fromJson(data, PoseMsgModel.class);
-            mMapManager.setOrientationAngle(msg.angle);
-            mMapManager.setRobotPos(PoseMsgModelToPoint(msg));
+            //下面这行不应该注释，由于 NavigationServer 的 handlePose 方法没有把角度信息上传，每次只传0。所以注释掉，上述方法要改
+            //mMapManager.setOrientationAngle(msg.angle);
+            Point point = PoseMsgModelToPoint(msg);
+            mMapManager.setRobotPos(point);
+            mCallback.reachDes(isReachDes(point));
+        }
+    }
+
+    private boolean isReachDes(Point robPos){
+        Point destPos = mMapManager.getDestPos();
+        int dx = robPos.x - destPos.x;
+        int dy = robPos.y - destPos.y;
+        int distance = dx * dx + dy * dy;
+        if (distance < 16) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -217,5 +232,16 @@ public class RobotManager implements WebSocketCallback {
 
     public void finishCtrl() {
         mWsManager.disconnectCtrlClient();
+    }
+
+
+
+
+    public void addMarkPoint(String name){
+        mMapManager.addMarkPoint(name);
+    }
+
+    public void rmMarkPoint(String name){
+        mMapManager.rmMarkPoint(name);
     }
 }

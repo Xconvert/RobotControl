@@ -2,6 +2,7 @@
     <string name="app_name">Robot Control</string>
     <string name="fun_nvg">导航到标记点</string>
     <string name="fun_clear_p">删除标记点</string>
+    <string name="fun_set_p">设置标记点</string>
 
     <string name="mode_idle">空闲模式</string>
     <string name="mode_build">建图模式</string>
@@ -31,5 +32,8 @@
     <string name="down">↓</string>
     <string name="left">←</string>
     <string name="right">→</string>
+
+    <string name="tip4">请输入标记点名称</string>
+    <string name="tip5">是否删除标记点 :  </string>
 
 </resources>

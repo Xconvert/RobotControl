@@ -1,6 +1,9 @@
 package com.convert.robotcontrol;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -18,8 +21,10 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +34,7 @@ import com.convert.robotcontrol.view.OrientationView;
 import com.convert.robotcontrol.view.RockerView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity implements Callback {
@@ -46,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private final int MSG_UPDATE_THUMB = 0;
     private final int MSG_UPDATE_MAP = 1;
     private final int MSG_VIDEO = 2;
+    private final int MSG_REACH = 3;
+    private final int MSG_FINISH_CTRL = 4;
     private final String KEY_MAP = "map";
     private final String KEY_VIDEO = "video";
     private int mMode = MODE_UNKNOWN;
@@ -57,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private ImageView mMap;
     private RockerView mRockerView;
     private LinearLayout mFuncLayout;
+    private Button mFuncSetP;
     private Button mFuncNvg;
     private Button mFuncClearPoint;
     private LinearLayout mPoseLayout;
@@ -78,6 +87,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private float mStartDis;
     //用于判断是否点击事件
     boolean mIsClick = true;
+    private ArrayAdapter<String> mAdapter;
+    private List<String> mPList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
         mRobotManager = RobotManager.getInstance();
         mRobotManager.init(this);
         mRobotManager.registerCallBack(this);
+
         mStartPoint = new PointF();
 
         updateMap(mRobotManager.getDesMap());
@@ -129,7 +141,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 @Override
                 public void onFinish() {
                     mRobotManager.doControl(0, 0);
-                    mRobotManager.finishCtrl();
+                    //解决控制延迟问题
+                    mHandler.sendEmptyMessageDelayed(MSG_FINISH_CTRL, 200);
                 }
             });
         }
@@ -206,6 +219,30 @@ public class MainActivity extends AppCompatActivity implements Callback {
             }
         });
         mFuncLayout = (LinearLayout) findViewById(R.id.map_func_layout);
+        mFuncSetP = findViewById(R.id.func_set_p);
+        mFuncSetP.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final EditText inputServer = new EditText(MainActivity.this);
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle(getString(R.string.tip4))
+                        .setView(inputServer)
+                        .setNegativeButton("Cancel", null);
+                builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (mRobotManager != null) {
+                            String pName = inputServer.getText().toString();
+                            if (!pName.equals("")){
+                                mRobotManager.addMarkPoint(pName);
+                                mPList.add(pName);
+                                mAdapter.notifyDataSetChanged();
+                            }
+                        }
+                    }
+                });
+                builder.show();
+            }
+        });
         mFuncNvg = (Button) findViewById(R.id.func_ngv);
         mFuncNvg.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -229,19 +266,32 @@ public class MainActivity extends AppCompatActivity implements Callback {
         mFuncClearPoint.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mFuncLayout.setVisibility(View.GONE);
-                mRobotManager.clearDesPos();
-                if (mRobotState == NVG) {
-                    //导航结束
-                    mRobotState = IDLE;
-                    mSpinner.setSelection(IDLE);
-                    mRobotMode = IDLE;
-                    mFuncNvg.setText(getString(R.string.fun_nvg));
-                    mFuncNvg.setTextColor(Color.BLACK);
-                    //...
-                }
+                finishNvg();
             }
         });
+        ListView listView = findViewById(R.id.point_list);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                final String name = mPList.get(position);
+                Log.i(TAG, "onItemClick: " + name);
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle(getString(R.string.tip5) + name)
+                        .setNegativeButton("Cancel", null);
+                builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        mPList.remove(name);
+                        mAdapter.notifyDataSetChanged();
+                        if (mRobotManager != null) {
+                            mRobotManager.rmMarkPoint(name);
+                        }
+                    }
+                });
+                builder.show();
+            }
+        });
+        mAdapter = new ArrayAdapter<>(MainActivity.this,android.R.layout.simple_list_item_1,mPList);
+        listView.setAdapter(mAdapter);
 
         mPoseLayout = (LinearLayout) findViewById(R.id.map_pose_layout);
         mTipSetPose = (TextView) findViewById(R.id.tip_set_pose);
@@ -336,6 +386,20 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
             }
         });
+    }
+
+    private void finishNvg() {
+        mFuncLayout.setVisibility(View.GONE);
+        mRobotManager.clearDesPos();
+        if (mRobotState == NVG) {
+            //导航结束
+            mRobotState = IDLE;
+            mSpinner.setSelection(IDLE);
+            mRobotMode = IDLE;
+            mFuncNvg.setText(getString(R.string.fun_nvg));
+            mFuncNvg.setTextColor(Color.BLACK);
+            Toast.makeText(this, "导航结束", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -506,7 +570,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     public void drag(MotionEvent event) {
         float dx = event.getX() - mStartPoint.x; // 得到x轴的移动距离
-        float dy = event.getY() - mStartPoint.y; // 得到x轴的移动距离
+        float dy = event.getY() - mStartPoint.y; // 得到y轴的移动距离
 
         mStartPoint.set(event.getX(), event.getY());
         //在当前基础上移动
@@ -529,6 +593,13 @@ public class MainActivity extends AppCompatActivity implements Callback {
         bundle.putParcelable(KEY_MAP, bitmap);
         message.setData(bundle);
         mHandler.sendMessage(message);
+    }
+
+    @Override
+    public void reachDes(boolean isReach) {
+        if (isReach){
+            mHandler.sendEmptyMessage(MSG_REACH);
+        }
     }
 
     @Override
@@ -581,6 +652,12 @@ public class MainActivity extends AppCompatActivity implements Callback {
                             //Log.d(TAG, "handleMessage: mVideo.setImageBitmap(video);");
                         }
                     }
+                    break;
+                case MSG_REACH:
+                    finishNvg();
+                    break;
+                case MSG_FINISH_CTRL:
+                    mRobotManager.finishCtrl();
                     break;
                 default:
             }

@@ -140,7 +140,7 @@ public class MapPrc {
         for (int i = 1; i < mGrayPixels.length; i++) {
             if (oldPixel == BLACK || mGrayPixels[i] == BLACK) {
                 oldPixel = mGrayPixels[i];
-                continue;
+
             } else if (mGrayPixels[i] != oldPixel) {
                 oldPixel = mGrayPixels[i];
                 mGrayPixels[i] = BLACK;
@@ -154,7 +154,7 @@ public class MapPrc {
             for (int j = 1; j < mRow; j++) {
                 if (oldPixel == BLACK || mGrayPixels[i + j * mCol] == BLACK) {
                     oldPixel = mGrayPixels[i + j * mCol];
-                    continue;
+
                 } else if (mGrayPixels[i + j * mCol] != oldPixel) {
                     oldPixel = mGrayPixels[i + j * mCol];
                     mGrayPixels[i + j * mCol] = BLACK;
